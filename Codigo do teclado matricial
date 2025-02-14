@@ -1,12 +1,13 @@
 #define col1 10
 #define col2 12
 #define col3 11
-#define lin1 6
+#define lin1 6    
 #define lin2 5
 #define lin3 4
 #define lin4 3
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+// Essa parte acima define as entradas do teclado matricial, encontra se inclompleto funcionando em um 3/4 
 LiquidCrystal_I2C lcd(0x27,16,2);
 
 char get_tecla(){
@@ -37,7 +38,7 @@ char get_tecla(){
 
 const char teclas[][12] = {"1 ", "2abc", "3def", "4ghi", "5jkl", "6mno", "7pqrs", "8tuv", "9wxyz", "*", "0", "#"};
 const unsigned long time_char = 1200;  //1200 milissegundos pra desconsiderar a ultima tecla
-
+// aqui acima se define quais teclas aparecem em ordem no teclado matricial
 class TecladoTelefone{
   private:
     unsigned long _millis_last_char;
@@ -125,7 +126,7 @@ char tecla_anterior = '\0';
 
 void loop() {
   char tecla = get_tecla();
-  
+  // toda a parte abaixo se refere ao botão de limpar a tela 
   if (tecla != tecla_anterior){
     if (tecla) {
       if (tecla == '#') {
