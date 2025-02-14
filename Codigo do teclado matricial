@@ -1,1 +1,145 @@
+#define col1 10
+#define col2 12
+#define col3 11
+#define lin1 6
+#define lin2 5
+#define lin3 4
+#define lin4 3
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
 
+char get_tecla(){
+  int l[]={lin1, lin2, lin3, lin4}; // Array de 4 posições contendo os 4 pinos de linhas
+  int i = 0, k = 0, t = 0;
+  
+  for (i=0; i<4; i++) {
+    digitalWrite(lin1,LOW); 
+    digitalWrite(lin2,LOW);
+    digitalWrite(lin3,LOW);
+    digitalWrite(lin4,LOW);
+    digitalWrite(l[i],HIGH); 
+    
+    if(digitalRead(col1)) { t = i*3+1; break; }
+    if(digitalRead(col2)) { t = i*3+2; break; }
+    if(digitalRead(col3)) { t = i*3+3; break; }
+  }
+  
+  if (t > 0 ){
+    if (t >= 1 && t<=9){ return char(t+48); }  //48--> ASCII: o charactere '1' na tabela ascii é 49º item, o '2' é o 50º item e assim por diante
+    if (t==10)         { return '*'; }
+    if (t==11)         { return '0'; }
+    if (t==12)         { return '#'; }
+  }
+  
+  return '\0';
+}
+
+const char teclas[][12] = {"1 ", "2abc", "3def", "4ghi", "5jkl", "6mno", "7pqrs", "8tuv", "9wxyz", "*", "0", "#"};
+const unsigned long time_char = 1200;  //1200 milissegundos pra desconsiderar a ultima tecla
+
+class TecladoTelefone{
+  private:
+    unsigned long _millis_last_char;
+    char _last_char;
+    String _palavra;
+    
+    void _set_last_char(char c, int ind_palavra){
+      if ( ind_palavra == 1 && _last_char != '\0' ) {
+        _palavra += _last_char;
+      }
+
+      _last_char = c;
+      _millis_last_char = millis();
+    }
+    
+  public:
+    TecladoTelefone(){
+      _millis_last_char = millis();
+      _last_char = '\0';
+    }
+  
+    void add(char c){
+      int pos = -1;
+      
+      if (c == '1'){ pos = 0;}
+      if (c == '2'){ pos = 1;}
+      if (c == '3'){ pos = 2;}
+      if (c == '4'){ pos = 3;}
+      if (c == '5'){ pos = 4;}
+      if (c == '6'){ pos = 5;}
+      if (c == '7'){ pos = 6;}
+      if (c == '8'){ pos = 7;}
+      if (c == '9'){ pos = 8;}
+      if (c == '*'){ pos = 9;}
+      if (c == '0'){ pos = 10;}
+      if (c == '#'){ pos = 11;}
+      
+      if (pos == -1){ return; }
+      
+      const char * t = teclas[pos];
+      
+      if ( (millis() - time_char) < _millis_last_char ) {
+        
+        int i = 0;
+        while (t[i] != '\0'){
+          if (_last_char == t[i]){
+            _set_last_char(  (t[i+1] == '\0') ? _last_char = t[0] : _last_char = t[i+1] , 0 );
+            return ;
+          }
+          i++;
+        }
+      }
+      
+      _set_last_char ( c, 1);
+    }
+    
+    char get_last_char(){ return _last_char; }
+    
+    String get_palavra( ) {
+      return _palavra + _last_char;
+    }
+};
+
+TecladoTelefone * teclado;
+
+void setup() {
+  Serial.begin(9600);
+  lcd.init();
+  
+  // colunas INPUT
+  pinMode(col1,INPUT);
+  pinMode(col2,INPUT);
+  pinMode(col3,INPUT);
+  
+  // linhas OUTPUT 
+  pinMode(lin1,OUTPUT); 
+  pinMode(lin2,OUTPUT);
+  pinMode(lin3,OUTPUT); 
+  pinMode(lin4,OUTPUT); 
+  
+  teclado = new TecladoTelefone();
+}
+
+char tecla_anterior = '\0';
+
+void loop() {
+  char tecla = get_tecla();
+  
+  if (tecla != tecla_anterior){
+    if (tecla) {
+      if (tecla == '#') {
+        lcd.clear();
+        teclado = new TecladoTelefone(); // Reinicia o objeto teclado
+      } else {
+        teclado->add(tecla);
+      }
+    }
+  }
+  
+  tecla_anterior = tecla;
+  
+  lcd.setCursor(0, 0);
+  lcd.print(teclado->get_palavra());
+  lcd.setBacklight(HIGH);
+}
